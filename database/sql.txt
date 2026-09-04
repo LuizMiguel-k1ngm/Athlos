@@ -1,0 +1,303 @@
+CREATE DATABASE IF NOT EXISTS arete
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+
+USE arete;
+
+-- =========================================================
+-- USERS
+-- =========================================================
+
+CREATE TABLE users (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    name VARCHAR(120) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP
+);
+
+
+-- =========================================================
+-- USER PROFILES
+-- =========================================================
+
+CREATE TABLE user_profiles (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    user_id BIGINT UNSIGNED NOT NULL,
+
+    birth_date DATE NULL,
+    gender VARCHAR(30) NULL,
+
+    height DECIMAL(5,2) NULL COMMENT 'Altura em centímetros',
+    weight DECIMAL(6,2) NULL COMMENT 'Peso em quilogramas',
+
+    activity_level VARCHAR(30) NULL,
+    goal VARCHAR(30) NULL,
+
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_user_profiles_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT uq_user_profiles_user
+        UNIQUE (user_id)
+);
+
+
+-- =========================================================
+-- EXERCISES
+-- =========================================================
+
+CREATE TABLE exercises (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    name VARCHAR(150) NOT NULL,
+    description TEXT NULL,
+
+    muscle_group VARCHAR(100) NULL,
+    difficulty VARCHAR(30) NULL,
+
+    duration INT UNSIGNED NULL
+        COMMENT 'Duração estimada em minutos',
+
+    calories_estimate DECIMAL(8,2) NULL
+        COMMENT 'Estimativa de calorias gastas',
+
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_exercises_muscle_group (muscle_group),
+    INDEX idx_exercises_difficulty (difficulty)
+);
+
+
+-- =========================================================
+-- WORKOUTS
+-- =========================================================
+
+CREATE TABLE workouts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    name VARCHAR(150) NOT NULL,
+    description TEXT NULL,
+
+    duration INT UNSIGNED NULL
+        COMMENT 'Duração estimada em minutos',
+
+    difficulty VARCHAR(30) NULL,
+
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_workouts_difficulty (difficulty)
+);
+
+
+-- =========================================================
+-- WORKOUT EXERCISES
+-- =========================================================
+
+CREATE TABLE workout_exercises (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    workout_id BIGINT UNSIGNED NOT NULL,
+    exercise_id BIGINT UNSIGNED NOT NULL,
+
+    sets INT UNSIGNED NULL,
+    repetitions INT UNSIGNED NULL,
+
+    duration INT UNSIGNED NULL
+        COMMENT 'Duração em segundos',
+
+    `order` INT UNSIGNED NOT NULL DEFAULT 0,
+
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_workout_exercises_workout
+        FOREIGN KEY (workout_id)
+        REFERENCES workouts(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_workout_exercises_exercise
+        FOREIGN KEY (exercise_id)
+        REFERENCES exercises(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    INDEX idx_workout_exercises_workout (workout_id),
+    INDEX idx_workout_exercises_exercise (exercise_id),
+    INDEX idx_workout_exercises_order (workout_id, `order`)
+);
+
+
+-- =========================================================
+-- FOODS
+-- =========================================================
+
+CREATE TABLE foods (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    name VARCHAR(150) NOT NULL,
+
+    calories DECIMAL(8,2) NOT NULL DEFAULT 0,
+    protein DECIMAL(8,2) NOT NULL DEFAULT 0,
+    carbohydrates DECIMAL(8,2) NOT NULL DEFAULT 0,
+    fat DECIMAL(8,2) NOT NULL DEFAULT 0,
+
+    serving_size DECIMAL(8,2) NULL,
+    serving_unit VARCHAR(30) NULL,
+
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_foods_name (name)
+);
+
+
+-- =========================================================
+-- MEALS
+-- =========================================================
+
+CREATE TABLE meals (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    user_id BIGINT UNSIGNED NOT NULL,
+
+    type VARCHAR(30) NOT NULL
+        COMMENT 'breakfast, lunch, dinner, snack',
+
+    date DATE NOT NULL,
+
+    calories DECIMAL(8,2) NOT NULL DEFAULT 0,
+    protein DECIMAL(8,2) NOT NULL DEFAULT 0,
+    carbohydrates DECIMAL(8,2) NOT NULL DEFAULT 0,
+    fat DECIMAL(8,2) NOT NULL DEFAULT 0,
+
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_meals_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    INDEX idx_meals_user_date (user_id, date),
+    INDEX idx_meals_date (date)
+);
+
+
+-- =========================================================
+-- MEAL FOODS
+-- =========================================================
+
+CREATE TABLE meal_foods (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    meal_id BIGINT UNSIGNED NOT NULL,
+    food_id BIGINT UNSIGNED NOT NULL,
+
+    quantity DECIMAL(8,2) NOT NULL DEFAULT 1,
+
+    calories DECIMAL(8,2) NOT NULL DEFAULT 0,
+    protein DECIMAL(8,2) NOT NULL DEFAULT 0,
+    carbohydrates DECIMAL(8,2) NOT NULL DEFAULT 0,
+    fat DECIMAL(8,2) NOT NULL DEFAULT 0,
+
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_meal_foods_meal
+        FOREIGN KEY (meal_id)
+        REFERENCES meals(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_meal_foods_food
+        FOREIGN KEY (food_id)
+        REFERENCES foods(id)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
+
+    INDEX idx_meal_foods_meal (meal_id),
+    INDEX idx_meal_foods_food (food_id)
+);
+
+
+-- =========================================================
+-- DAILY CALORIE GOALS
+-- =========================================================
+
+CREATE TABLE daily_calorie_goals (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    user_id BIGINT UNSIGNED NOT NULL,
+
+    date DATE NOT NULL,
+
+    calorie_goal DECIMAL(8,2) NOT NULL DEFAULT 0,
+    calories_consumed DECIMAL(8,2) NOT NULL DEFAULT 0,
+    calories_burned DECIMAL(8,2) NOT NULL DEFAULT 0,
+    calories_remaining DECIMAL(8,2) NOT NULL DEFAULT 0,
+
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_daily_calorie_goals_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT uq_daily_calorie_goals_user_date
+        UNIQUE (user_id, date),
+
+    INDEX idx_daily_calorie_goals_date (date)
+);
+
+
+-- =========================================================
+-- PROGRESS
+-- =========================================================
+
+CREATE TABLE progress (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    user_id BIGINT UNSIGNED NOT NULL,
+
+    weight DECIMAL(6,2) NULL,
+    body_fat DECIMAL(5,2) NULL,
+
+    date DATE NOT NULL,
+
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_progress_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    INDEX idx_progress_user_date (user_id, date)
+);
